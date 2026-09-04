@@ -49,7 +49,7 @@ export function Markdown({ content }: { content: string }) {
     const heading = /^(#{1,4})\s+(.*)$/.exec(line);
     if (heading) {
       flush(key + "f");
-      const level = heading[1].length;
+      const level = (heading[1] ?? "").length;
       blocks.push(
         <h3
           key={key}
@@ -59,7 +59,7 @@ export function Markdown({ content }: { content: string }) {
               : "text-sm font-semibold text-foreground"
           }
         >
-          {inline(heading[2])}
+          {inline(heading[2] ?? "")}
         </h3>,
       );
       return;
@@ -70,7 +70,7 @@ export function Markdown({ content }: { content: string }) {
         flush(key + "f");
         list = { ordered: false, items: [] };
       }
-      list.items.push(bullet[1]);
+      list.items.push(bullet[1] ?? "");
       return;
     }
     const numbered = /^\d+[.)]\s+(.*)$/.exec(line.trim());
@@ -79,7 +79,7 @@ export function Markdown({ content }: { content: string }) {
         flush(key + "f");
         list = { ordered: true, items: [] };
       }
-      list.items.push(numbered[1]);
+      list.items.push(numbered[1] ?? "");
       return;
     }
     flush(key + "f");
