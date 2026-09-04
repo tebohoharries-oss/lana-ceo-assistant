@@ -4,9 +4,11 @@ import { z } from "zod";
 const MODEL = "google/gemini-3.7-flash";
 
 const LANA_PERSONA =
-  "You are Lana, the executive AI assistant to a Chief Executive Officer. " +
-  "Tone: professional, direct, authoritative, highly organized, concise. " +
-  "No filler, no pleasantries, no hedging. Deliver actionable intelligence in tight " +
+  "You are Lana, an elite executive assistant and operational strategist for a business. " +
+  "Your users range from the CEO/business owner to entry-level team members, so keep language " +
+  "clear and accessible while maintaining a top-tier executive standard. " +
+  "Tone: professional, efficient, articulate, direct. " +
+  "No filler, no greetings, no preamble, no hedging. Deliver actionable intelligence in tight " +
   "structured markdown (short headers, bullets). Never exceed what is asked.";
 
 async function callGateway(messages: Array<{ role: string; content: string }>) {
@@ -58,41 +60,30 @@ export const lanaChat = createServerFn({ method: "POST" })
   });
 
 const PlanInput = z.object({
-  tasks: z.array(
-    z.object({
-      title: z.string().min(1),
-      priority: z.string(),
-      duration: z.string(),
-      deadline: z.string(),
-    }),
-  ),
-  notes: z.string().optional(),
+  tasks: z.string().min(3),
+  urgency: z.string(),
+  hours: z.string(),
 });
 
 export const lanaPlan = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => PlanInput.parse(input))
   .handler(async ({ data }) => {
-    const list = data.tasks
-      .map(
-        (t, i) =>
-          `${i + 1}. ${t.title} | Priority: ${t.priority} | Est. duration: ${t.duration} | Deadline: ${t.deadline || "unspecified"}`,
-      )
-      .join("\n");
-
     const content = await callGateway([
       { role: "system", content: LANA_PERSONA },
       {
         role: "user",
         content:
-          "Build an optimized executive day schedule from these tasks:\n" +
-          list +
-          (data.notes ? `\nConstraints: ${data.notes}` : "") +
-          "\n\nRespond in markdown with exactly these sections:\n" +
-          "## Optimized Daily Schedule\n" +
-          "Group into time blocks with explicit clock times: **Deep Work / Strategic Focus**, **Board & Leadership Meetings**, **Administrative & Delegation**. " +
-          "Under each block list the assigned tasks with times. Note delegation candidates explicitly.\n" +
-          "## Executive Time-Management Tips\n" +
-          "Exactly 2 high-level tips, one line each.",
+          "Organize this raw, unstructured task list into an optimized time-blocked day.\n\n" +
+          `TASKS:\n${data.tasks}\n\n` +
+          `Overall urgency level: ${data.urgency}\n` +
+          `Available working hours: ${data.hours || "09:00 - 17:00"}\n\n` +
+          "Respond in markdown with exactly these three sections and nothing else:\n" +
+          "## Time-Blocked Schedule\n" +
+          "Explicit clock times within the available working hours, e.g. **09:00 AM - 10:30 AM** — task. Include short breaks.\n" +
+          "## Priority Breakdown\n" +
+          "Two labelled groups: **Urgent / Do Personally** and **Delegate**, each a bullet list.\n" +
+          "## Time-Saving Recommendations\n" +
+          "Exactly 2 recommendations, one line each.",
       },
     ]);
     return { content };
