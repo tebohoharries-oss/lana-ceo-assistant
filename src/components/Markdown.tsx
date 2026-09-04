@@ -46,6 +46,10 @@ export function Markdown({ content }: { content: string }) {
       flush(key);
       return;
     }
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) {
+      flush(key);
+      return;
+    }
     const heading = /^(#{1,4})\s+(.*)$/.exec(line);
     if (heading) {
       flush(key + "f");
